@@ -1,18 +1,20 @@
-import React, { Component } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { Component } from 'react'
+import battleshipLogo from './battleship.svg'
+import { Button, Input } from 'semantic-ui-react'
 
 class App extends Component {
   render() {
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h1 className="App-title">Welcome to React</h1>
+      <div className="app">
+        <header className="header">
+          <img src={battleshipLogo} className="logo" alt="logo" />
+          <h1 className="intro">Welcome to Multiplayer Battleship</h1>
         </header>
-        <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
-        </p>
+        <div className="body">
+          <Input placeholder='Game name' />
+          <Button>Join game</Button>
+          <Button>Create game</Button>
+        </div>
       </div>
     );
   }
