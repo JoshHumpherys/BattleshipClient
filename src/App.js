@@ -39,30 +39,38 @@ class App extends Component {
         </header>
         {
           this.state.playing ? (
-            <table className="board">
-              <thead>
-                <tr>
-                  {
-                    new Array(this.state.gridSize + 1).fill().map((_, i) =>
-                      <td>
-                        {i === 0 ? '' : String.fromCharCode('A'.charCodeAt(0) + i - 1)}
-                      </td>
-                    )
-                  }
-                </tr>
-              </thead>
-              {
-                new Array(this.state.gridSize).fill('').map((_, i) =>
-                  <tr key={i}>
+            <div className="body">
+              <table className="board">
+                <thead>
+                  <tr>
                     {
-                      new Array(this.state.gridSize + 1).fill('').map((_, j) =>
-                        j === 0 ? <td>{i + 1}</td> : <td />
+                      new Array(this.state.gridSize + 1).fill().map((_, i) =>
+                        <th key={i}>
+                          {i === 0 ? '' : String.fromCharCode('A'.charCodeAt(0) + i - 1)}
+                        </th>
                       )
                     }
                   </tr>
-                )
-              }
-            </table>
+                </thead>
+                <tbody>
+                  {
+                    new Array(this.state.gridSize).fill('').map((_, i) =>
+                      <tr key={i}>
+                        {
+                          new Array(this.state.gridSize + 1).fill('').map((_, j) =>
+                            j === 0 ? (
+                              <td key={j}>{i + 1}</td>
+                            ) : (
+                              <td key={j} onClick={() => alert('TODO cell ' + (j - 1) + ', ' + i + ' clicked')} />
+                            )
+                          )
+                        }
+                      </tr>
+                    )
+                  }
+                </tbody>
+              </table>
+            </div>
           ) : (
             this.state.starting ? (
               <div className="body">
