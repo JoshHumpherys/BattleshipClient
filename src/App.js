@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import battleshipLogo from './battleship.svg'
 import { Button, Input } from 'semantic-ui-react'
+import LoadingMeter from './LoadingMeter'
 
 class App extends Component {
   constructor(props) {
@@ -11,6 +12,7 @@ class App extends Component {
       gameCode: null,
       playing: false,
       gridSize: 10,
+      players: [],
     };
 
     this.joinGame = this.joinGame.bind(this);
@@ -75,7 +77,7 @@ class App extends Component {
           board[square.y][square.x] = square.contents;
         })
       });
-      this.setState({ board });
+      this.setState({ board, players: json.response.players });
     });
   }
 
@@ -101,11 +103,7 @@ class App extends Component {
       }
       let board = this.state.board;
       board[y][x] = result ? 4 : 3;
-      this.setState({ board });
-    }).catch(_ => { // TODO when the server throws a 500 it's a hit
-      let board = this.state.board;
-      board[y][x] = 4;
-      this.setState({ board });
+      this.setState({ board, lastFireTime: Date.now() });
     });
   }
 
@@ -126,10 +124,39 @@ class App extends Component {
 
   render() {
     return (
-      <div className="app">
+      <div className={'app' + (this.state.playing && this.state.board ? ' playing' : '')}>
         <header className="header">
-          <img src={battleshipLogo} className="logo" alt="logo" />
-          <h1 className="intro">Welcome to Multiplayer Battleship</h1>
+          {
+            this.state.playing && this.state.board ? (
+              <div>
+                <h2>Leaderboard</h2>
+                <table className="leaderboard">
+                  <thead>
+                  <tr>
+                    <th>Player name</th>
+                    <th>Score</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  {
+                    this.state.players.map((player, i) =>
+                      <tr key={i}>
+                        <td>{player.name}</td>
+                        <td>{player.score}</td>
+                      </tr>
+                    )
+                  }
+                  </tbody>
+                </table>
+                <LoadingMeter lastFireTime={this.state.lastFireTime} />
+              </div>
+            ) : (
+              [
+                <img key="img" src={battleshipLogo} className="logo" alt="logo" />,
+                <h1 key="h1" className="intro">Welcome to Multiplayer Battleship</h1>,
+              ]
+            )
+          }
         </header>
         {
           this.state.playing && this.state.board ? (
@@ -157,7 +184,7 @@ class App extends Component {
                             ) : (
                               <td key={j}
                                 onClick={() => {
-                                  if(this.state.board[i][j - 1] !== 1) {
+                                  if(this.state.board[i][j - 1] === 0) {
                                     this.fire(j - 1, i);
                                   }
                                 }}
