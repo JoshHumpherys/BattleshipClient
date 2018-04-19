@@ -7,27 +7,87 @@ class App extends Component {
     super(props);
 
     this.state = {
-      code: null,
+      session: null,
+      gameCode: null,
       playing: false,
-      starting: false,
       gridSize: 10,
     };
 
     this.joinGame = this.joinGame.bind(this);
     this.createGame = this.createGame.bind(this);
-    this.startGame = this.startGame.bind(this);
+    this.updateGame = this.updateGame.bind(this);
   }
 
   joinGame() {
-    this.setState({ playing: true });
+    fetch('http://kepler.covenant.edu:8080/api/start', {
+      body: JSON.stringify({
+        session: null,
+        gameCode: this.state.gameCode,
+        playerName: this.state.playerName,
+        numPlayers: 2,
+      }),
+      method: 'POST',
+    }).then(async response => {
+      const json = await response.json();
+      this.setState({ session: json.response.session });
+      this.updateGame();
+      this.setState({ playing: true });
+      setInterval(this.updateGame, 1000);
+    });
   }
 
   createGame() {
-    this.setState({ starting: true });
+    fetch('http://kepler.covenant.edu:8080/api/start', {
+      body: JSON.stringify({
+        session: null,
+        gameCode: this.state.gameCode,
+        playerName: this.state.playerName,
+        numPlayers: this.state.numPlayers,
+      }),
+      method: 'POST',
+    }).then(async response => {
+      const json = await response.json();
+      this.setState({ session: json.response.session });
+      this.updateGame();
+      this.setState({ playing: true });
+      setInterval(this.updateGame, 1000);
+    });
   }
 
-  startGame() {
-    this.setState({ starting: false, playing: true });
+  updateGame() {
+    console.log('polling status');
+    fetch('http://kepler.covenant.edu:8080/api/status', {
+      body: JSON.stringify({
+        session: this.state.session,
+      }),
+      method: 'POST',
+    }).then(async response => {
+      const json = await response.json();
+      console.log(json);
+      const board = json.response.board.grid;
+      console.log(board);
+      const ships = json.response.client.ships;
+      console.log(ships);
+      ships.forEach(ship => {
+        console.log(ship);
+        ship.squares.forEach(square => {
+          board[square.y][square.x] = square.contents;
+        })
+      });
+      this.setState({
+        gridSize: json.response.board.width,
+        board
+      });
+    });
+  }
+
+  static getClassNameByContents(contents) {
+    switch(contents) {
+      case 0:
+        return 'water';
+      case 1:
+        return 'ship';
+    }
   }
 
   render() {
@@ -38,7 +98,7 @@ class App extends Component {
           <h1 className="intro">Welcome to Multiplayer Battleship</h1>
         </header>
         {
-          this.state.playing ? (
+          this.state.playing && this.state.board ? (
             <div className="body">
               <table className="board">
                 <thead>
@@ -61,7 +121,13 @@ class App extends Component {
                             j === 0 ? (
                               <td key={j}>{i + 1}</td>
                             ) : (
-                              <td key={j} onClick={() => alert('TODO cell ' + (j - 1) + ', ' + i + ' clicked')} />
+                              <td key={j}
+                                onClick={() => {
+                                  if(this.state.board[i][j] !== 1) {
+                                    alert('TODO cell ' + (j - 1) + ', ' + i + ' clicked');
+                                  }
+                                }}
+                                className={App.getClassNameByContents(this.state.board[i][j])} />
                             )
                           )
                         }
@@ -72,17 +138,17 @@ class App extends Component {
               </table>
             </div>
           ) : (
-            this.state.starting ? (
-              <div className="body">
-                <Button onClick={this.startGame}>Start game</Button>
-              </div>
-            ) : (
-              <div className="body">
-                <Input placeholder='Game name' onChange={(e, data) => this.setState({ code: data.value })} />
-                <Button onClick={this.joinGame}>Join game</Button>
-                <Button onClick={this.createGame}>Create game</Button>
-              </div>
-            )
+            <div className="body">
+              <Input placeholder='Game name' onChange={(e, data) => this.setState({ gameCode: data.value })} />
+              <Input placeholder='Player name' onChange={(e, data) => this.setState({ playerName: data.value })} />
+              <Button onClick={this.joinGame}>Join game</Button>
+              <br />
+              <br />
+              <Input placeholder='Game name' onChange={(e, data) => this.setState({ gameCode: data.value })} />
+              <Input placeholder='Player name' onChange={(e, data) => this.setState({ playerName: data.value })} />
+              <Input placeholder='Number of players' type='number' onChange={(e, data) => this.setState({ numPlayers: data.value })} />
+              <Button onClick={this.createGame}>Create game</Button>
+            </div>
           )
         }
       </div>

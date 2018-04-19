@@ -64,3 +64,16 @@ body {
   background-color: aqua;
   cursor: pointer;
 }
+
+.board > tbody > tr > td:first-child {
+  font-weight: bold;
+}
+
+.board > tbody > tr > td.water {
+  background-color: aqua;
+}
+
+.board > tbody > tr > td.ship {
+  background-color: slategray;
+  cursor: default;
+}
