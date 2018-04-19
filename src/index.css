@@ -77,3 +77,15 @@ body {
   background-color: slategray;
   cursor: default;
 }
+
+.board > tbody > tr > td.destroyed {
+  background-color: red;
+}
+
+.board > tbody > tr > td.miss {
+  background-color: mediumaquamarine;
+}
+
+.board > tbody > tr > td.hit {
+  background-color: orange;
+}

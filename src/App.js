@@ -16,6 +16,7 @@ class App extends Component {
     this.joinGame = this.joinGame.bind(this);
     this.createGame = this.createGame.bind(this);
     this.updateGame = this.updateGame.bind(this);
+    this.fire = this.fire.bind(this);
   }
 
   joinGame() {
@@ -55,7 +56,6 @@ class App extends Component {
   }
 
   updateGame() {
-    console.log('polling status');
     fetch('http://kepler.covenant.edu:8080/api/status', {
       body: JSON.stringify({
         session: this.state.session,
@@ -64,20 +64,48 @@ class App extends Component {
     }).then(async response => {
       const json = await response.json();
       console.log(json);
-      const board = json.response.board.grid;
-      console.log(board);
+      let board = this.state.board;
+      if(board === undefined) {
+        board = json.response.board.grid.map(row => row.map(_ => 0));
+        this.setState({ gridSize: board.length, board });
+      }
       const ships = json.response.client.ships;
-      console.log(ships);
       ships.forEach(ship => {
-        console.log(ship);
         ship.squares.forEach(square => {
           board[square.y][square.x] = square.contents;
         })
       });
-      this.setState({
-        gridSize: json.response.board.width,
-        board
-      });
+      this.setState({ board });
+    });
+  }
+
+  fire(x, y) {
+    fetch('http://kepler.covenant.edu:8080/api/fire', {
+      body: JSON.stringify({
+        session: this.state.session,
+        x,
+        y
+      }),
+      method: 'POST',
+    }).then(async response => {
+      let json, result;
+      try {
+        json = await response.json();
+        const statusCode = json.status.code;
+        if(statusCode === 5 || statusCode === 2) { // 5 too soon, 2 already shot
+          return;
+        }
+        result = json.response.result;
+      } catch(e) {
+        result = true; // TODO when the server throws a 500 it's a hit
+      }
+      let board = this.state.board;
+      board[y][x] = result ? 4 : 3;
+      this.setState({ board });
+    }).catch(_ => { // TODO when the server throws a 500 it's a hit
+      let board = this.state.board;
+      board[y][x] = 4;
+      this.setState({ board });
     });
   }
 
@@ -87,6 +115,12 @@ class App extends Component {
         return 'water';
       case 1:
         return 'ship';
+      case 2:
+        return 'destroyed';
+      case 3:
+        return 'miss';
+      case 4:
+        return 'hit';
     }
   }
 
@@ -123,11 +157,11 @@ class App extends Component {
                             ) : (
                               <td key={j}
                                 onClick={() => {
-                                  if(this.state.board[i][j] !== 1) {
-                                    alert('TODO cell ' + (j - 1) + ', ' + i + ' clicked');
+                                  if(this.state.board[i][j - 1] !== 1) {
+                                    this.fire(j - 1, i);
                                   }
                                 }}
-                                className={App.getClassNameByContents(this.state.board[i][j])} />
+                                className={App.getClassNameByContents(this.state.board[i][j - 1])} />
                             )
                           )
                         }
