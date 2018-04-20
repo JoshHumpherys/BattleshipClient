@@ -13,6 +13,7 @@ class App extends Component {
       playing: false,
       gridSize: 10,
       players: [],
+      state: 0
     };
 
     this.joinGame = this.joinGame.bind(this);
@@ -21,13 +22,13 @@ class App extends Component {
     this.fire = this.fire.bind(this);
   }
 
-  joinGame() {
-    fetch('http://kepler.covenant.edu:8080/api/start', {
+  createGame() {
+    fetch('http://kepler.covenant.edu:8080/api/create', {
       body: JSON.stringify({
         session: null,
         gameCode: this.state.gameCode,
         playerName: this.state.playerName,
-        numPlayers: 2,
+        numPlayers: this.state.numPlayers,
       }),
       method: 'POST',
     }).then(async response => {
@@ -39,13 +40,12 @@ class App extends Component {
     });
   }
 
-  createGame() {
-    fetch('http://kepler.covenant.edu:8080/api/start', {
+  joinGame() {
+    fetch('http://kepler.covenant.edu:8080/api/join', {
       body: JSON.stringify({
         session: null,
         gameCode: this.state.gameCode,
         playerName: this.state.playerName,
-        numPlayers: this.state.numPlayers,
       }),
       method: 'POST',
     }).then(async response => {
@@ -68,8 +68,9 @@ class App extends Component {
       console.log(json);
       let board = this.state.board;
       if(board === undefined) {
-        board = json.response.board.grid.map(row => row.map(_ => 0));
-        this.setState({ gridSize: board.length, board });
+        const gridSize = json.response.board.width;
+        board = new Array(gridSize).fill(0).map(elem => new Array(gridSize).fill(0));
+        this.setState({ gridSize, board });
       }
       const ships = json.response.client.ships;
       ships.forEach(ship => {
@@ -77,11 +78,14 @@ class App extends Component {
           board[square.y][square.x] = square.contents;
         })
       });
-      this.setState({ board, players: json.response.players });
+      this.setState({ board, players: json.response.players, state: json.response.state });
     });
   }
 
   fire(x, y) {
+    if(this.state.state !== 1) {
+      return;
+    }
     fetch('http://kepler.covenant.edu:8080/api/fire', {
       body: JSON.stringify({
         session: this.state.session,
@@ -94,10 +98,16 @@ class App extends Component {
       try {
         json = await response.json();
         const statusCode = json.status.code;
-        if(statusCode === 5 || statusCode === 2) { // 5 too soon, 2 already shot
+        if(statusCode === 5 || statusCode === 2 || statusCode === 4) { // 5 too soon, 2 already shot, 4 player is out
           return;
         }
         result = json.response.result;
+        if(result) {
+          const players = [...this.state.players].map(player => ({ ...player }));
+          const player = players.find(player => player.name === this.state.playerName);
+          player.score += 100;
+          this.setState({ players });
+        }
       } catch(e) {
         result = true; // TODO when the server throws a 500 it's a hit
       }
@@ -148,7 +158,17 @@ class App extends Component {
                   }
                   </tbody>
                 </table>
-                <LoadingMeter lastFireTime={this.state.lastFireTime} />
+                {
+                  this.state.state !== 1 ? (
+                    <h2>
+                      {
+                        this.state.state === 0 ? 'Waiting for players to join...' : 'Game over'
+                      }
+                    </h2>
+                  ) : (
+                    <LoadingMeter lastFireTime={this.state.lastFireTime} />
+                  )
+                }
               </div>
             ) : (
               [

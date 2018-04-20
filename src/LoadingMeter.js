@@ -9,7 +9,7 @@ class LoadingMeter extends Component {
     return (
       <div className="loading-meter">
         <div className="loading-meter-progress"
-          style={{ width: Math.min((Date.now() - this.props.lastFireTime) / 70, 100) + '%' }} />
+          style={{ width: Math.min((Date.now() - this.props.lastFireTime) / 1000 * 100 / 2.8, 100) + '%' }} />
       </div>
     );
   }
